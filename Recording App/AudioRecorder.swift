@@ -20,7 +20,7 @@ class AudioRecorder: NSObject, ObservableObject, AVAudioRecorderDelegate {
     private let uploader: AudioUploading
     private let uploadURL: URL
     
-    init(uploader: AudioUploading = Uploader.shared, uploadURL: URL = URL(string: "http://YOUR_MAC_LOCAL_IP:3000/upload")!) {
+    init(uploader: AudioUploading = Uploader.shared, uploadURL: URL = URL(string: "http://127.0.0.1:3000/upload")!) {
         self.uploader = uploader
         self.uploadURL = uploadURL
         super.init()
