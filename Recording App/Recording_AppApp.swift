@@ -9,9 +9,11 @@ import SwiftUI
 
 @main
 struct Recording_AppApp: App {
+    @StateObject private var recorder = AudioRecorder()
+    
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            ContentView(recorder: recorder)
         }
     }
 }

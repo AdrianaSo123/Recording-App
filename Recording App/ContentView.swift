@@ -8,11 +8,7 @@
 import SwiftUI
 
 struct ContentView: View {
-    @StateObject var recorder: AudioRecorder
-    
-    init(recorder: AudioRecorder = AudioRecorder()) {
-        self._recorder = StateObject(wrappedValue: recorder)
-    }
+    @ObservedObject var recorder: AudioRecorder
     
     var body: some View {
         VStack(spacing: 40) {
@@ -78,6 +74,6 @@ extension RecordState: Equatable {
 
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
-        ContentView()
+        ContentView(recorder: AudioRecorder())
     }
 }
