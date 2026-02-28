@@ -8,7 +8,11 @@
 import SwiftUI
 
 struct ContentView: View {
-    @StateObject private var recorder = AudioRecorder()
+    @StateObject var recorder: AudioRecorder
+    
+    init(recorder: AudioRecorder = AudioRecorder()) {
+        self._recorder = StateObject(wrappedValue: recorder)
+    }
     
     var body: some View {
         VStack(spacing: 40) {

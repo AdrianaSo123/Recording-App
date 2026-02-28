@@ -1,8 +1,14 @@
 import Foundation
 
-class Uploader {
+protocol AudioUploading {
+    func uploadAudio(fileURL: URL, to destURL: URL, completion: @escaping (Result<Void, Error>) -> Void)
+}
+
+class Uploader: AudioUploading {
     static let shared = Uploader()
+    internal var session: URLSession = .shared
     
+    // Changing from private to internal to allow normal initialization if needed, but keeping shared as requested pattern. Or keep private. Let's keep private init to maintain singleton behavior for the default instance.
     private init() {}
     
     func uploadAudio(fileURL: URL, to destURL: URL, completion: @escaping (Result<Void, Error>) -> Void) {
@@ -31,7 +37,7 @@ class Uploader {
             return
         }
         
-        let task = URLSession.shared.uploadTask(with: request, from: body) { data, response, error in
+        let task = self.session.uploadTask(with: request, from: body) { data, response, error in
             if let error = error {
                 completion(.failure(error))
                 return

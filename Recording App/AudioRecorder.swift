@@ -14,12 +14,15 @@ enum RecordState {
 class AudioRecorder: NSObject, ObservableObject, AVAudioRecorderDelegate {
     @Published var state: RecordState = .idle
     private var audioRecorder: AVAudioRecorder?
-    private var recordedFileURL: URL?
+    internal var recordedFileURL: URL? // Internal for testing
     
-    // Configurable endpoint
-    let uploadURL = URL(string: "http://YOUR_MAC_LOCAL_IP:3000/upload")!
+    // Dependencies
+    private let uploader: AudioUploading
+    private let uploadURL: URL
     
-    override init() {
+    init(uploader: AudioUploading = Uploader.shared, uploadURL: URL = URL(string: "http://YOUR_MAC_LOCAL_IP:3000/upload")!) {
+        self.uploader = uploader
+        self.uploadURL = uploadURL
         super.init()
         setupSession()
     }
@@ -89,7 +92,7 @@ class AudioRecorder: NSObject, ObservableObject, AVAudioRecorderDelegate {
             return
         }
         
-        Uploader.shared.uploadAudio(fileURL: fileURL, to: uploadURL) { [weak self] result in
+        uploader.uploadAudio(fileURL: fileURL, to: uploadURL) { [weak self] result in
             DispatchQueue.main.async {
                 switch result {
                 case .success():
