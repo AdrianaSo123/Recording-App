@@ -1,41 +1,101 @@
-//
-//  Recording_AppUITests.swift
-//  Recording AppUITests
-//
-//  Created by Adriana So on 2/25/26.
-//
-
 import XCTest
 
 final class Recording_AppUITests: XCTestCase {
 
     override func setUpWithError() throws {
-        // Put setup code here. This method is called before the invocation of each test method in the class.
-
-        // In UI tests it is usually best to stop immediately when a failure occurs.
         continueAfterFailure = false
-
-        // In UI tests it’s important to set the initial state - such as interface orientation - required for your tests before they run. The setUp method is a good place to do this.
     }
 
     override func tearDownWithError() throws {
-        // Put teardown code here. This method is called after the invocation of each test method in the class.
     }
 
     @MainActor
-    func testExample() throws {
-        // UI tests must launch the application that they test.
+    func testPositiveUploadFlow() throws {
         let app = XCUIApplication()
+        app.launchArguments = ["-UITest_MockServerSuccess"]
         app.launch()
 
-        // Use XCTAssert and related functions to verify your tests produce the correct results.
+        // Wait for idle state
+        XCTAssertTrue(app.staticTexts["Idle"].waitForExistence(timeout: 2.0))
+
+        // Tap Mic button
+        let micButton = app.buttons.firstMatch
+        micButton.tap()
+        
+        // Handle Microphone Permission Prompt if it appears
+        let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+        let allowButton = springboard.buttons["OK"] // Or "Allow" depending on OS version
+        if allowButton.waitForExistence(timeout: 2.0) {
+            allowButton.tap()
+            // If we just allowed it, `requestRecordPermission` callback happens asynchronously.
+            // On first tap, it asks for permission. We may need to tap again if the app didn't automatically start.
+            // But AudioRecorder.swift says:
+            // if allowed { self?.startRecording() }
+            // So it should start recording automatically.
+        }
+
+        // Verify "Recording..." state
+        XCTAssertTrue(app.staticTexts["Recording..."].waitForExistence(timeout: 5.0))
+
+        // Tap Stop button
+        micButton.tap()
+
+        // Verify "Uploading..." briefly
+        // It might be too fast to catch with mocked local network, but we can try.
+        // XCTAssertTrue(app.staticTexts["Uploading..."].waitForExistence(timeout: 1.0))
+        
+        // Verify "Upload successful"
+        XCTAssertTrue(app.staticTexts["Upload successful"].waitForExistence(timeout: 5.0))
     }
 
     @MainActor
-    func testLaunchPerformance() throws {
-        // This measures how long it takes to launch your application.
-        measure(metrics: [XCTApplicationLaunchMetric()]) {
-            XCUIApplication().launch()
+    func testNetworkFailureFlow() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-UITest_MockServerFailure"]
+        app.launch()
+
+        XCTAssertTrue(app.staticTexts["Idle"].waitForExistence(timeout: 2.0))
+
+        let micButton = app.buttons.firstMatch
+        micButton.tap()
+        
+        // Handle Microphone Permission
+        let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+        let allowButton = springboard.buttons["OK"]
+        if allowButton.waitForExistence(timeout: 2.0) {
+            allowButton.tap()
         }
+
+        XCTAssertTrue(app.staticTexts["Recording..."].waitForExistence(timeout: 5.0))
+
+        // Tap Stop button
+        micButton.tap()
+
+        // Verify failure text
+        let failedText = app.staticTexts.containing(NSPredicate(format: "label BEGINSWITH 'Upload failed'")).firstMatch
+        XCTAssertTrue(failedText.waitForExistence(timeout: 5.0))
+    }
+    
+    @MainActor
+    func testMicrophonePermissionDenied() throws {
+        // Reset permissions before testing
+        let app = XCUIApplication()
+        app.resetAuthorizationStatus(for: .microphone)
+        app.launchArguments = ["-UITest_MockServerSuccess"]
+        app.launch()
+
+        XCTAssertTrue(app.staticTexts["Idle"].waitForExistence(timeout: 2.0))
+
+        let micButton = app.buttons.firstMatch
+        micButton.tap()
+        
+        let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+        let dontAllowButton = springboard.buttons["Don’t Allow"]
+        if dontAllowButton.waitForExistence(timeout: 2.0) {
+            dontAllowButton.tap()
+        }
+
+        let failedText = app.staticTexts["Upload failed: Microphone Permission Denied"]
+        XCTAssertTrue(failedText.waitForExistence(timeout: 5.0))
     }
 }
